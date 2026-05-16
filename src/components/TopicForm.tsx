@@ -67,7 +67,7 @@ export default function TopicForm() {
         <textarea
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g. How does Kalman filtering work?"
+          placeholder="e.g. What is the capital of France?"
           maxLength={300}
           rows={3}
           required
@@ -82,7 +82,7 @@ export default function TopicForm() {
         <input
           value={studentName}
           onChange={(e) => setStudentName(e.target.value)}
-          placeholder="Reema"
+          placeholder="Name here"
           maxLength={60}
           className="mt-2 w-full rounded-xl border border-ink-700 bg-ink-950/80 px-4 py-3 text-ink-50 placeholder:text-ink-500 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
         />

@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "projectTeach — Adaptive Avatar Tutor",
@@ -18,8 +19,15 @@ export default function RootLayout({
         <div className="min-h-screen flex flex-col">
           <header className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto w-full">
             <a href="/" className="flex items-center gap-2 group">
-              <div className="size-8 rounded-lg bg-gradient-to-br from-indigo-500 via-fuchsia-500 to-emerald-400 shadow-lg shadow-indigo-500/20" />
-              <span className="font-semibold tracking-tight">projectTeach</span>
+              <Image
+                src="/logo.png"
+                alt="Nexa logo"
+                width={32}
+                height={32}
+                priority
+                className="size-8 rounded-lg object-cover shadow-lg shadow-indigo-500/20"
+              />
+              <span className="font-semibold tracking-tight">Nexa</span>
             </a>
             <a
               href="https://docs.bey.dev"
