@@ -27,7 +27,7 @@ export default function RootLayout({
                 priority
                 className="size-8 rounded-lg object-cover shadow-lg shadow-indigo-500/20"
               />
-              <span className="font-semibold tracking-tight">Nexa</span>
+              <span className="font-semibold tracking-tight">iTutor</span>
             </a>
             <a
               href="https://docs.bey.dev"
