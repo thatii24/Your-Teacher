@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAgent, createCall, deleteAgent, listAvatars } from "@/lib/bey";
+import { createAgent, createCall, deleteAgent, getCachedAvatars } from "@/lib/bey";
 import { buildTeachingPrompt } from "@/lib/prompt";
 import { createSession } from "@/lib/sessions";
 
@@ -49,17 +49,9 @@ export async function POST(req: Request) {
     avatarId = undefined;
   }
   if (!avatarId) {
-    console.info(
-      "[POST /api/sessions] BEY_DEFAULT_AVATAR_ID missing; attempting automatic avatar discovery.",
-    );
     try {
-      const avatars = await listAvatars();
+      const avatars = await getCachedAvatars();
       avatarId = avatars[0]?.id;
-      if (avatarId) {
-        console.info(
-          `[POST /api/sessions] Auto-selected BeyondPresence avatar: ${avatarId}`,
-        );
-      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error.";
       console.error(

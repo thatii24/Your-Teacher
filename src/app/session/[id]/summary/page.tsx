@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import ImprovementList from "@/components/ImprovementList";
-import type { LessonAnalysis, StudentLevel } from "@/lib/openai";
+import type { LessonSummary, TranscriptHighlight } from "@/lib/summary";
 
 interface ReadyResponse {
   status: "ready";
@@ -13,7 +12,7 @@ interface ReadyResponse {
   callId: string;
   durationSeconds: number | null;
   messageCount: number;
-  analysis: LessonAnalysis;
+  summary: LessonSummary;
 }
 
 interface PendingResponse {
@@ -38,12 +37,6 @@ type SummaryResponse =
   | ErrorResponse
   | NotFoundResponse;
 
-const LEVEL_LABEL: Record<StudentLevel, string> = {
-  beginner: "Beginner",
-  intermediate: "Intermediate",
-  advanced: "Advanced",
-};
-
 export default function SummaryPage() {
   const params = useParams<{ id: string }>();
   const sessionId = typeof params?.id === "string" ? params.id : "";
@@ -58,6 +51,9 @@ export default function SummaryPage() {
     }
     stopRef.current = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const POLL_DELAYS = [800, 1200, 1800, 2500, 3500, 5000];
+    let nextAttempt = 0;
 
     async function poll() {
       if (stopRef.current) return;
@@ -77,7 +73,10 @@ export default function SummaryPage() {
         if (stopRef.current) return;
         setAttempts((n) => n + 1);
       }
-      timer = setTimeout(poll, 4000);
+      const delay =
+        POLL_DELAYS[Math.min(nextAttempt, POLL_DELAYS.length - 1)];
+      nextAttempt += 1;
+      timer = setTimeout(poll, delay);
     }
 
     poll();
@@ -122,7 +121,7 @@ export default function SummaryPage() {
     );
   }
 
-  const { analysis, topic, durationSeconds, messageCount, studentName } = data;
+  const { summary, topic, durationSeconds, messageCount, studentName } = data;
 
   return (
     <div className="pt-4 sm:pt-6 max-w-3xl mx-auto">
@@ -141,53 +140,50 @@ export default function SummaryPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <Stat label="Level" value={LEVEL_LABEL[analysis.studentLevel]} />
         <Stat
           label="Duration"
           value={durationSeconds ? formatDuration(durationSeconds) : "—"}
         />
         <Stat label="Messages" value={String(messageCount)} />
-        <Stat label="Topics covered" value={String(analysis.covered.length)} />
+        <Stat label="You said" value={String(summary.studentMessages)} />
+        <Stat label="Tutor said" value={String(summary.tutorMessages)} />
       </div>
 
-      {analysis.summary ? (
-        <div className="mb-6 rounded-2xl border border-ink-800/70 bg-ink-900/40 p-4 sm:p-5">
-          <div className="text-xs uppercase tracking-wider text-ink-500 mb-1">
-            How it went
-          </div>
-          <p className="text-ink-200 leading-relaxed">{analysis.summary}</p>
-        </div>
+      {summary.longestStudentResponses.length > 0 ? (
+        <Section title="Your best responses">
+          <HighlightList items={summary.longestStudentResponses} accent="user" />
+          <p className="mt-2 text-xs text-ink-500">
+            Picked by length — your most substantive answers during the session.
+          </p>
+        </Section>
       ) : null}
 
-      {analysis.covered.length > 0 ? (
-        <div className="mb-6">
-          <div className="text-xs uppercase tracking-wider text-ink-500 mb-2">
-            What we covered
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {analysis.covered.map((c, i) => (
-              <span
-                key={`${i}-${c}`}
-                className="text-sm rounded-full border border-ink-700 bg-ink-900/60 px-3 py-1 text-ink-200"
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
+      {summary.keyTutorExplanations.length > 0 ? (
+        <Section title="Key tutor explanations">
+          <HighlightList items={summary.keyTutorExplanations} accent="ai" />
+        </Section>
       ) : null}
 
-      <div>
-        <div className="text-xs uppercase tracking-wider text-ink-500 mb-2">
-          Areas to explore next
+      <Section title="Full transcript">
+        <div className="rounded-2xl border border-ink-800/70 bg-ink-900/40 divide-y divide-ink-800/70 max-h-[520px] overflow-y-auto">
+          {summary.transcript.map((m, i) => (
+            <div key={i} className="px-4 py-3">
+              <div className="text-[10px] uppercase tracking-wider text-ink-500 mb-1">
+                {m.sender === "ai" ? "Tutor" : "You"} ·{" "}
+                {new Date(m.sentAt).toLocaleTimeString()}
+              </div>
+              <div className="text-sm text-ink-200 leading-relaxed whitespace-pre-wrap">
+                {m.message}
+              </div>
+            </div>
+          ))}
         </div>
-        <ImprovementList items={analysis.improvementAreas} />
-      </div>
+      </Section>
 
       <div className="mt-8 flex flex-col sm:flex-row gap-3">
         <Link
           href="/"
-          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-emerald-400 px-5 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 hover:opacity-95 transition"
+          className="inline-flex items-center justify-center rounded-xl bg-[radial-gradient(120%_120%_at_30%_0%,rgba(198, 72, 236, 0.25),rgb(8, 16, 36)_70%)] px-5 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 hover:opacity-95 transition"
         >
           Start a new lesson
         </Link>
@@ -199,6 +195,60 @@ export default function SummaryPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mb-6">
+      <div className="text-xs uppercase tracking-wider text-ink-500 mb-2">
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function HighlightList({
+  items,
+  accent,
+}: {
+  items: TranscriptHighlight[];
+  accent: "user" | "ai";
+}) {
+  return (
+    <ol className="space-y-3">
+      {items.map((item, idx) => (
+        <li
+          key={`${idx}-${item.sentAt}`}
+          className="rounded-2xl border border-ink-800/70 bg-ink-900/40 p-4 sm:p-5"
+        >
+          <div className="flex items-start gap-3">
+            <span
+              className={`mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white border border-fuchsia-400/30 shadow-md shadow-fuchsia-500/20 bg-[radial-gradient(120%_120%_at_30%_0%,rgba(198,72,236,0.85),rgb(15,23,42)_85%)] ${
+                accent === "user" ? "opacity-95" : "opacity-100"
+              }`}
+            >
+              {idx + 1}
+            </span>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-ink-500 mb-1">
+                {new Date(item.sentAt).toLocaleTimeString()}
+              </div>
+              <div className="text-sm text-ink-100 leading-relaxed whitespace-pre-wrap">
+                {item.message}
+              </div>
+            </div>
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 

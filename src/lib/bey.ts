@@ -128,6 +128,22 @@ export async function retrieveCall(callId: string): Promise<BeyCall> {
   return beyFetch<BeyCall>(`/v1/calls/${callId}`);
 }
 
+interface AvatarCache {
+  avatars: BeyAvatar[];
+  expiresAt: number;
+}
+let avatarCache: AvatarCache | null = null;
+const AVATAR_CACHE_MS = 5 * 60 * 1000;
+
+export async function getCachedAvatars(): Promise<BeyAvatar[]> {
+  if (avatarCache && avatarCache.expiresAt > Date.now()) {
+    return avatarCache.avatars;
+  }
+  const avatars = await listAvatars();
+  avatarCache = { avatars, expiresAt: Date.now() + AVATAR_CACHE_MS };
+  return avatars;
+}
+
 export async function listAvatars(): Promise<BeyAvatar[]> {
   const payload = await beyFetch<unknown>("/v1/avatars");
   if (Array.isArray(payload)) {

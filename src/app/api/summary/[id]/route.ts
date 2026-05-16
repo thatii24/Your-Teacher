@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteAgent, listCallMessages, retrieveCall } from "@/lib/bey";
-import { analyzeLesson } from "@/lib/openai";
+import { summarizeLesson } from "@/lib/summary";
 import { getSession } from "@/lib/sessions";
 
 export const runtime = "nodejs";
@@ -20,7 +20,12 @@ export async function GET(
   }
 
   try {
-    const call = await retrieveCall(session.callId);
+    const [call, messagesResult] = await Promise.all([
+      retrieveCall(session.callId),
+      listCallMessages(session.callId).catch(() => [] as Awaited<
+        ReturnType<typeof listCallMessages>
+      >),
+    ]);
     const startedAt = call.status?.started_at;
     const endedAt = call.status?.ended_at;
 
@@ -36,7 +41,7 @@ export async function GET(
       });
     }
 
-    const messages = await listCallMessages(call.id);
+    const messages = messagesResult;
     if (messages.length === 0) {
       return NextResponse.json({
         status: "pending",
@@ -46,7 +51,7 @@ export async function GET(
       });
     }
 
-    const analysis = await analyzeLesson(session.topic, messages);
+    const summary = summarizeLesson(session.topic, messages);
 
     deleteAgent(session.agentId).catch((err) => {
       console.warn(
@@ -71,7 +76,7 @@ export async function GET(
             )
           : null,
       messageCount: messages.length,
-      analysis,
+      summary,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error.";

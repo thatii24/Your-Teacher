@@ -44,6 +44,7 @@ export default function TopicForm() {
         return;
       }
 
+      router.prefetch(`/session/${data.sessionId}`);
       router.push(`/session/${data.sessionId}`);
     } catch (err) {
       setError(
@@ -115,7 +116,7 @@ export default function TopicForm() {
       <button
         type="submit"
         disabled={loading || topic.trim().length < 2}
-        className="mt-6 w-full rounded-xl bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-emerald-400 px-5 py-3 font-semibold text-white shadow-lg shadow-indigo-500/30 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50 transition"
+       className="mt-6 w-full rounded-xl px-5 py-3 font-semibold text-white border border-white/10 hover:border-fuchsia-400/50 hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50 transition bg-[radial-gradient(120%_120%_at_30%_0%,rgba(198, 72, 236, 0.25),rgb(8, 16, 36)_70%)]"
       >
         {loading ? "Setting up your tutor…" : "Start the lesson"}
       </button>

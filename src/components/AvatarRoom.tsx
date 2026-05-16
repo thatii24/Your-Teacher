@@ -95,20 +95,21 @@ export default function AvatarRoom({
           return;
         }
         setUiState("connected");
-        try {
-          await room.localParticipant.setMicrophoneEnabled(true);
-        } catch (micErr) {
-          console.warn("Microphone enable failed:", micErr);
-          setErrorMessage(
-            "Couldn't enable your microphone. Check your browser's site permissions and try again — or type your answers in the text box below.",
-          );
-        }
 
         room.remoteParticipants.forEach((participant) => {
           participant.trackPublications.forEach((pub) => {
             if (pub.track) attachTrack(pub.track);
           });
         });
+
+        void room.localParticipant
+          .setMicrophoneEnabled(true)
+          .catch((micErr) => {
+            console.warn("Microphone enable failed:", micErr);
+            setErrorMessage(
+              "Couldn't enable your microphone. Check your browser's site permissions and try again — or type your answers in the text box below.",
+            );
+          });
       } catch (err) {
         if (cancelled) return;
         const msg =

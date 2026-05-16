@@ -2,13 +2,13 @@ import TopicForm from "@/components/TopicForm";
 
 export default function HomePage() {
   return (
-    <div className="pt-10 sm:pt-16">
+    <div className="pt-10 sm:pt-20">
       <div className="text-center max-w-2xl mx-auto mb-10">
         <div className="inline-flex items-center gap-2 rounded-full border border-ink-700/80 bg-ink-900/60 px-3 py-1 text-xs text-ink-300 mb-5">
           <span className="size-1.5 rounded-full bg-emerald-400" />
           Live avatar tutor, one topic at a time
         </div>
-        <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight bg-gradient-to-r from-white via-ink-100 to-ink-300 bg-clip-text text-transparent">
+        <h1 className="text-6xl sm:text-6xl font-semibold tracking-tight bg-gradient-to-r from-white via-ink-100 to-ink-300 bg-clip-text text-transparent">
           Learn anything, face to face.
         </h1>
         <p className="mt-4 text-ink-300 text-base sm:text-lg">
