@@ -67,7 +67,7 @@ export default function TopicForm() {
         <textarea
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
-          placeholder="e.g. What is the capital of France?"
+          placeholder="e.g. How does Kalman filtering work"
           maxLength={300}
           rows={3}
           required
