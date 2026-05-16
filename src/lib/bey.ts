@@ -39,6 +39,11 @@ export interface BeyCallMessage {
   sender: "ai" | "user";
 }
 
+export interface BeyAvatar {
+  id: string;
+  name?: string;
+}
+
 function apiKey(): string {
   const key = process.env.BEY_API_KEY;
   if (!key) {
@@ -121,4 +126,34 @@ export async function createCall(
 
 export async function retrieveCall(callId: string): Promise<BeyCall> {
   return beyFetch<BeyCall>(`/v1/calls/${callId}`);
+}
+
+export async function listAvatars(): Promise<BeyAvatar[]> {
+  const payload = await beyFetch<unknown>("/v1/avatars");
+  if (Array.isArray(payload)) {
+    return payload.filter(
+      (item): item is BeyAvatar =>
+        typeof item === "object" &&
+        item !== null &&
+        "id" in item &&
+        typeof (item as { id: unknown }).id === "string",
+    );
+  }
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "data" in payload &&
+    Array.isArray((payload as { data: unknown }).data)
+  ) {
+    return (payload as { data: unknown[] }).data.filter(
+      (item): item is BeyAvatar =>
+        typeof item === "object" &&
+        item !== null &&
+        "id" in item &&
+        typeof (item as { id: unknown }).id === "string",
+    );
+  }
+
+  throw new Error("Unexpected /v1/avatars response format from BeyondPresence API.");
 }

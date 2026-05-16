@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { deleteAgent, listCallMessages, retrieveCall } from "@/lib/bey";
 import { analyzeLesson } from "@/lib/openai";
 import { getSession } from "@/lib/sessions";
@@ -7,10 +7,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = getSession(params.id);
+  const { id } = await params;
+  const session = getSession(id);
   if (!session) {
     return NextResponse.json(
       { status: "not_found", error: "Session not found." },
