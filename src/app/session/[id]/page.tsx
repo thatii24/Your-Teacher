@@ -4,8 +4,13 @@ import { getSession } from "@/lib/sessions";
 
 export const dynamic = "force-dynamic";
 
-export default function SessionPage({ params }: { params: { id: string } }) {
-  const session = getSession(params.id);
+export default async function SessionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const session = getSession(id);
   if (!session) notFound();
 
   return (

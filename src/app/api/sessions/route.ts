@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createAgent, createCall, deleteAgent } from "@/lib/bey";
+import { createAgent, createCall, deleteAgent, listAvatars } from "@/lib/bey";
 import { buildTeachingPrompt } from "@/lib/prompt";
 import { createSession } from "@/lib/sessions";
 
@@ -9,6 +9,12 @@ export const dynamic = "force-dynamic";
 interface CreateSessionBody {
   topic?: string;
   studentName?: string;
+}
+
+function isUuidLike(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 export async function POST(req: Request) {
@@ -35,12 +41,47 @@ export async function POST(req: Request) {
     );
   }
 
-  const avatarId = process.env.BEY_DEFAULT_AVATAR_ID;
+  let avatarId = process.env.BEY_DEFAULT_AVATAR_ID?.trim();
+  if (avatarId && !isUuidLike(avatarId)) {
+    console.warn(
+      `[POST /api/sessions] Ignoring invalid BEY_DEFAULT_AVATAR_ID value: ${avatarId.slice(0, 24)}...`,
+    );
+    avatarId = undefined;
+  }
   if (!avatarId) {
+    console.info(
+      "[POST /api/sessions] BEY_DEFAULT_AVATAR_ID missing; attempting automatic avatar discovery.",
+    );
+    try {
+      const avatars = await listAvatars();
+      avatarId = avatars[0]?.id;
+      if (avatarId) {
+        console.info(
+          `[POST /api/sessions] Auto-selected BeyondPresence avatar: ${avatarId}`,
+        );
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error.";
+      console.error(
+        `[POST /api/sessions] Automatic avatar discovery failed: ${message}`,
+      );
+      return NextResponse.json(
+        {
+          error: `Server could not resolve a BeyondPresence avatar automatically: ${message}`,
+        },
+        { status: 500 },
+      );
+    }
+  }
+
+  if (!avatarId) {
+    console.error(
+      "[POST /api/sessions] No avatar available. Create one in BeyondPresence or set BEY_DEFAULT_AVATAR_ID.",
+    );
     return NextResponse.json(
       {
         error:
-          "Server is missing BEY_DEFAULT_AVATAR_ID. Pick an avatar in the BeyondPresence dashboard and set its UUID in .env.local.",
+          "No BeyondPresence avatars were found for this API key. Create an avatar in the dashboard or set BEY_DEFAULT_AVATAR_ID in .env.local.",
       },
       { status: 500 },
     );

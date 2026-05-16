@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import ImprovementList from "@/components/ImprovementList";
 import type { LessonAnalysis, StudentLevel } from "@/lib/openai";
@@ -43,19 +44,25 @@ const LEVEL_LABEL: Record<StudentLevel, string> = {
   advanced: "Advanced",
 };
 
-export default function SummaryPage({ params }: { params: { id: string } }) {
+export default function SummaryPage() {
+  const params = useParams<{ id: string }>();
+  const sessionId = typeof params?.id === "string" ? params.id : "";
   const [data, setData] = useState<SummaryResponse | null>(null);
   const [attempts, setAttempts] = useState(0);
   const stopRef = useRef(false);
 
   useEffect(() => {
+    if (!sessionId) {
+      setData({ status: "not_found", error: "Session id is missing." });
+      return;
+    }
     stopRef.current = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     async function poll() {
       if (stopRef.current) return;
       try {
-        const res = await fetch(`/api/summary/${params.id}`, {
+        const res = await fetch(`/api/summary/${sessionId}`, {
           cache: "no-store",
         });
         const json = (await res.json()) as SummaryResponse;
@@ -79,7 +86,7 @@ export default function SummaryPage({ params }: { params: { id: string } }) {
       stopRef.current = true;
       if (timer) clearTimeout(timer);
     };
-  }, [params.id]);
+  }, [sessionId]);
 
   if (!data) {
     return <LoadingState message="Fetching your session..." />;
@@ -185,7 +192,7 @@ export default function SummaryPage({ params }: { params: { id: string } }) {
           Start a new lesson
         </Link>
         <Link
-          href={`/session/${params.id}`}
+          href={`/session/${sessionId}`}
           className="inline-flex items-center justify-center rounded-xl border border-ink-700 bg-ink-900 px-5 py-3 font-medium text-ink-100 hover:bg-ink-800 transition"
         >
           Back to the tutor
