@@ -1,18 +1,12 @@
 import type { BeyCallMessage } from "./bey";
 
-export interface TranscriptHighlight {
-  message: string;
-  sentAt: string;
-}
-
 export interface LessonSummary {
   topic: string;
   totalMessages: number;
   studentMessages: number;
   tutorMessages: number;
   averageStudentWords: number;
-  longestStudentResponses: TranscriptHighlight[];
-  keyTutorExplanations: TranscriptHighlight[];
+  recommendedTopics: string[];
   transcript: Array<{
     sender: "ai" | "user";
     message: string;
@@ -24,14 +18,28 @@ function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-function pickLongest(
-  messages: BeyCallMessage[],
-  limit: number,
-): TranscriptHighlight[] {
-  return [...messages]
-    .sort((a, b) => wordCount(b.message) - wordCount(a.message))
-    .slice(0, limit)
-    .map((m) => ({ message: m.message, sentAt: m.sent_at }));
+function extractCoreTopic(topic: string): string {
+  const cleaned = topic
+    .replace(
+      /^(how\s+(to|do(es)?|can|did)|what\s+(is|are|was|were)|why\s+(is|do(es)?|are)|introduction\s+to|intro\s+to|basics\s+of|the\s+basics\s+of|learn(ing)?|teach\s+me(\s+about)?|tell\s+me\s+about|explain)\s+/i,
+      "",
+    )
+    .replace(/^(a|an|the)\s+/i, "")
+    .replace(/[.?!]+\s*$/, "")
+    .trim();
+  return cleaned.length > 0 ? cleaned : topic.trim();
+}
+
+export function generateRecommendedTopics(topic: string): string[] {
+  const core = extractCoreTopic(topic);
+  return [
+    `Deep dive: advanced ${core} concepts and theory`,
+    `Hands-on practice: build a small project applying ${core}`,
+    `Common pitfalls and how to debug issues in ${core}`,
+    `Best practices and design patterns for ${core}`,
+    `Real-world case studies that use ${core}`,
+    `${core} interview-style questions and self-review`,
+  ];
 }
 
 export function summarizeLesson(
@@ -54,8 +62,7 @@ export function summarizeLesson(
     studentMessages: student.length,
     tutorMessages: tutor.length,
     averageStudentWords,
-    longestStudentResponses: pickLongest(student, 3),
-    keyTutorExplanations: pickLongest(tutor, 3),
+    recommendedTopics: generateRecommendedTopics(topic),
     transcript: messages.map((m) => ({
       sender: m.sender,
       message: m.message,

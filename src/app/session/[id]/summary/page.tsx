@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { LessonSummary, TranscriptHighlight } from "@/lib/summary";
+import type { LessonSummary } from "@/lib/summary";
 
 interface ReadyResponse {
   status: "ready";
@@ -149,18 +149,29 @@ export default function SummaryPage() {
         <Stat label="Tutor said" value={String(summary.tutorMessages)} />
       </div>
 
-      {summary.longestStudentResponses.length > 0 ? (
-        <Section title="Your best responses">
-          <HighlightList items={summary.longestStudentResponses} accent="user" />
+      {summary.recommendedTopics.length > 0 ? (
+        <Section title="Recommended next topics">
+          <ol className="space-y-3">
+            {summary.recommendedTopics.map((rec, idx) => (
+              <li
+                key={`${idx}-${rec}`}
+                className="rounded-2xl border border-ink-800/70 bg-ink-900/40 p-4 sm:p-5"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white border border-fuchsia-400/30 shadow-md shadow-fuchsia-500/20 bg-[radial-gradient(120%_120%_at_30%_0%,rgba(198,72,236,0.85),rgb(15,23,42)_85%)]">
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0 text-sm text-ink-100 leading-relaxed">
+                    {rec}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
           <p className="mt-2 text-xs text-ink-500">
-            Picked by length — your most substantive answers during the session.
+            A mix of theory and practical paths that build on what you just
+            covered.
           </p>
-        </Section>
-      ) : null}
-
-      {summary.keyTutorExplanations.length > 0 ? (
-        <Section title="Key tutor explanations">
-          <HighlightList items={summary.keyTutorExplanations} accent="ai" />
         </Section>
       ) : null}
 
@@ -212,43 +223,6 @@ function Section({
       </div>
       {children}
     </div>
-  );
-}
-
-function HighlightList({
-  items,
-  accent,
-}: {
-  items: TranscriptHighlight[];
-  accent: "user" | "ai";
-}) {
-  return (
-    <ol className="space-y-3">
-      {items.map((item, idx) => (
-        <li
-          key={`${idx}-${item.sentAt}`}
-          className="rounded-2xl border border-ink-800/70 bg-ink-900/40 p-4 sm:p-5"
-        >
-          <div className="flex items-start gap-3">
-            <span
-              className={`mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white border border-fuchsia-400/30 shadow-md shadow-fuchsia-500/20 bg-[radial-gradient(120%_120%_at_30%_0%,rgba(198,72,236,0.85),rgb(15,23,42)_85%)] ${
-                accent === "user" ? "opacity-95" : "opacity-100"
-              }`}
-            >
-              {idx + 1}
-            </span>
-            <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-wider text-ink-500 mb-1">
-                {new Date(item.sentAt).toLocaleTimeString()}
-              </div>
-              <div className="text-sm text-ink-100 leading-relaxed whitespace-pre-wrap">
-                {item.message}
-              </div>
-            </div>
-          </div>
-        </li>
-      ))}
-    </ol>
   );
 }
 
